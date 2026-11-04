@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 120" width="440" height="120">
+  <!-- Logo de exemplo do curso: sol nascendo sobre a xícara + nome. Marca fictícia. -->
+  <g fill="none" stroke="#2E6BFF" stroke-width="6" stroke-linecap="round">
+    <path d="M22 70 h68 v10 a22 22 0 0 1 -22 22 h-24 a22 22 0 0 1 -22 -22 z" fill="#2E6BFF"/>
+    <path d="M90 74 h8 a10 10 0 0 1 0 20 h-8"/>
+    <path d="M36 58 a20 20 0 0 1 40 0"/>
+    <path d="M56 26 v10 M30 38 l7 7 M82 38 l-7 7"/>
+  </g>
+  <text x="122" y="84" font-family="Fraunces, Georgia, serif" font-weight="600" font-size="52" fill="#2B211B">Café Aurora</text>
+</svg>

@@ -1,0 +1,8 @@
+{
+  "cenas": [
+    { "frase": "Todo dia começa com uma xícara de café.", "desenhos": ["sunrise", "coffee"], "destaques": ["café"] },
+    { "frase": "A gente torra os grãos aqui, toda segunda.", "desenhos": ["flame", { "icone": "calendar", "na_palavra": "segunda" }], "destaques": ["torra"] },
+    { "frase": "Você passa cedo e a fornada sai quentinha.", "desenhos": ["clock", "croissant"], "destaques": ["quentinha"] },
+    { "frase": "Café Aurora. Seu café já está passando.", "desenhos": ["heart"], "destaques": ["Aurora"] }
+  ]
+}

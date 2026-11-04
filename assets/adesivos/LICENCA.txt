@@ -1,0 +1,11 @@
+Adesivos de exemplo do Estúdio de Vídeo (xicara.png, carimbo-aprovado.png, uau.png)
+
+Desenhados em código para este curso (os SVGs estão em fonte/). Licença livre CC0 1.0:
+pode usar, alterar e publicar em qualquer vídeo, inclusive comercial, sem pedir e sem dar crédito.
+https://creativecommons.org/publicdomain/zero/1.0/deed.pt_BR
+
+Os textos usam a fonte Barlow Condensed (licença SIL OFL 1.1, em assets/fontes/barlow-condensed/OFL.txt),
+que permite usá-la dentro de imagens.
+
+Para fazer um adesivo seu: peça ao Claude um SVG simples e rode
+  node ferramentas/svg-para-png.mjs meu-desenho.svg assets/adesivos/meu-adesivo.png

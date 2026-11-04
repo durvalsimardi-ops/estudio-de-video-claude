@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 320">
+  <path d="M210 14 L246 70 L312 36 L304 104 L398 104 L334 156 L404 222 L314 222 L326 300 L254 252 L210 310 L170 252 L94 300 L108 224 L16 222 L86 158 L20 104 L116 104 L106 36 L172 70 Z"
+        fill="#FFD43B" stroke="#0A0C10" stroke-width="10" stroke-linejoin="round"/>
+  <text x="212" y="200" text-anchor="middle" font-family="Barlow Condensed" font-weight="900" font-size="112" fill="#0A0C10" transform="rotate(-6 212 170)">UAU!</text>
+</svg>

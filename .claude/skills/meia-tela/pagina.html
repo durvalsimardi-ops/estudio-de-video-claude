@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Meia tela</title>
+<style>
+/*FONTES*/
+:root {
+  --cor: #2E6BFF;        /* cor de destaque (troque pela cor da sua marca) */
+  --fundo: #EEF1F6;      /* fundo claro */
+  --cartao: #FFFFFF;
+  --texto: #0A0C10;
+  --apoio: #6C7686;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+body { font-family: 'Corpo', sans-serif; color: var(--texto); }
+
+/* A janela da pessoa é um "buraco": a sombra gigante pinta o fundo em volta e respeita o canto arredondado.
+   O vídeo entra por baixo, no ffmpeg. */
+.janela { position: absolute; border-radius: 44px;
+  box-shadow: 0 18px 50px rgba(10, 12, 16, .16), 0 0 0 4000px var(--fundo); }
+
+.area { position: absolute; left: 40px; right: 40px; top: 170px; height: 690px;
+  display: flex; align-items: center; justify-content: center; }
+.painel { position: absolute; left: 0; right: 0; background: var(--cartao); border-radius: 40px;
+  padding: 58px 60px 64px; box-shadow: 0 14px 40px rgba(10, 12, 16, .08); opacity: 0; }
+.etiqueta { font: 600 36px/1 'Corpo'; letter-spacing: .08em; text-transform: uppercase; color: var(--cor); margin-bottom: 20px; }
+.titulo { font: 700 100px/.94 'Titulo'; text-transform: uppercase; letter-spacing: .005em; margin-bottom: 44px; text-wrap: balance; }
+.itens { list-style: none; display: grid; gap: 32px; }
+.item { display: flex; align-items: center; gap: 26px; opacity: 0; }
+.item span { font: 500 58px/1.1 'Corpo'; }
+.painel.cheio .titulo { font-size: 80px; margin-bottom: 32px; }
+.painel.cheio .item span { font-size: 46px; }
+.painel.cheio .itens { gap: 22px; }
+.check { flex: 0 0 68px; height: 68px; }
+.check circle { fill: var(--cor); }
+.check path { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; }
+</style>
+</head>
+<body>
+<div class="janela" id="janela"></div>
+<div class="area" id="area"></div>
+<script>
+// Os dados entram aqui pelo script meia_tela.mjs: { janela:{x,y,w,h}, cor, fundo, paineis:[{etiqueta,titulo,inicio,fim,itens:[{texto,em}]}] }
+const DADOS = /*DADOS*/null;
+
+const limitar = (x) => Math.max(0, Math.min(1, x));
+const suave = (x) => 1 - Math.pow(1 - limitar(x), 3);                  // chega devagar
+const recuo = (x) => { x = limitar(x); const s = 1.2; return 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); }; // passa 4% e volta
+
+const raiz = document.documentElement.style;
+if (DADOS.cor) raiz.setProperty('--cor', DADOS.cor);
+if (DADOS.fundo) raiz.setProperty('--fundo', DADOS.fundo);
+const j = document.getElementById('janela');
+Object.assign(j.style, { left: DADOS.janela.x + 'px', top: DADOS.janela.y + 'px', width: DADOS.janela.w + 'px', height: DADOS.janela.h + 'px' });
+
+// monta os painéis uma vez; o seek só mexe em opacidade e posição
+const area = document.getElementById('area');
+const els = DADOS.paineis.map((p) => {
+  const d = document.createElement('div');
+  d.className = 'painel' + (p.itens.length > 4 ? ' cheio' : '');
+  d.innerHTML = (p.etiqueta ? `<div class="etiqueta"></div>` : '') + `<div class="titulo"></div><ul class="itens"></ul>`;
+  if (p.etiqueta) d.querySelector('.etiqueta').textContent = p.etiqueta;
+  d.querySelector('.titulo').textContent = p.titulo;
+  const ul = d.querySelector('.itens');
+  const itens = p.itens.map((it) => {
+    const li = document.createElement('li');
+    li.className = 'item';
+    li.innerHTML = `<svg class="check" viewBox="0 0 60 60"><circle cx="30" cy="30" r="30"/><path d="M18 31 l8 8 l16 -17"/></svg><span></span>`;
+    li.querySelector('span').textContent = it.texto;
+    ul.appendChild(li);
+    return { li, circ: li.querySelector('circle'), traco: li.querySelector('path'), em: it.em };
+  });
+  area.appendChild(d);
+  return { d, p, itens };
+});
+
+// Desenha o quadro do tempo t (segundos desde o começo do vídeo). Mesmo t = mesmo desenho, sempre.
+// Devolve uma "assinatura" do estado: se não mudou, o script reaproveita o quadro anterior.
+window.seek = (t) => {
+  const assinatura = [];
+  for (const { d, p, itens } of els) {
+    const entra = suave((t - p.inicio) / 0.45);
+    const sai = suave((t - (p.fim - 0.3)) / 0.3);
+    const a = t < p.inicio || t > p.fim ? 0 : entra * (1 - sai);
+    d.style.opacity = a.toFixed(3);
+    d.style.transform = `translateY(${((1 - entra) * 34 - sai * 24).toFixed(1)}px) scale(${(0.97 + 0.03 * entra).toFixed(4)})`;
+    assinatura.push(a.toFixed(3), entra.toFixed(3), sai.toFixed(3));
+    for (const it of itens) {
+      const k = suave((t - it.em) / 0.4);
+      const bola = recuo((t - it.em) / 0.35);
+      const risco = suave((t - it.em - 0.12) / 0.3);
+      it.li.style.opacity = k.toFixed(3);
+      it.li.style.transform = `translateX(${((1 - k) * -28).toFixed(1)}px)`;
+      it.circ.setAttribute('r', (30 * bola).toFixed(2));
+      it.traco.style.strokeDashoffset = (40 * (1 - risco)).toFixed(2);
+      assinatura.push(k.toFixed(3), bola.toFixed(3), risco.toFixed(3));
+    }
+  }
+  return assinatura.join(',');
+};
+window.seek(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+ "clique": {
+  "arquivo": "clique.wav",
+  "ponto": 0.0,
+  "duracao": 0.07,
+  "lufs": -27.5,
+  "descricao": "clique de interface, curto e seco"
+ },
+ "pop": {
+  "arquivo": "pop.wav",
+  "ponto": 0.0,
+  "duracao": 0.16,
+  "lufs": -20.5,
+  "descricao": "pop de bolha, para algo que aparece"
+ },
+ "whoosh": {
+  "arquivo": "whoosh.wav",
+  "ponto": 0.36,
+  "duracao": 0.62,
+  "lufs": -17.4,
+  "descricao": "passagem de ar da esquerda para a direita, para chicote"
+ },
+ "brilho": {
+  "arquivo": "brilho.wav",
+  "ponto": 0.0,
+  "duracao": 1.1,
+  "lufs": -13.7,
+  "descricao": "brilho suave, para flash"
+ },
+ "impacto": {
+  "arquivo": "impacto.wav",
+  "ponto": 0.0,
+  "duracao": 1.3,
+  "lufs": -18.5,
+  "descricao": "impacto grave, para zoom-soco e entrada forte"
+ },
+ "subida": {
+  "arquivo": "subida.wav",
+  "ponto": 2.4,
+  "duracao": 2.4,
+  "lufs": -14.6,
+  "descricao": "subida de 2,4 s que termina no ponto (antes da virada)"
+ }
+}

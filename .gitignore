@@ -1,0 +1,12 @@
+.venv
+node_modules/
+trabalho/*
+!trabalho/.gitkeep
+entrega/*
+!entrega/.gitkeep
+originais/*
+!originais/.gitkeep
+referencias/videos/
+.DS_Store
+*.mov
+.wrangler/

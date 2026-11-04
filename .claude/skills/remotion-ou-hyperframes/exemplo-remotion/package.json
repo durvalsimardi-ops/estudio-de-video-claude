@@ -1,0 +1,20 @@
+{
+  "name": "abertura-remotion",
+  "private": true,
+  "description": "A mesma abertura do Café Aurora, feita em Remotion (exemplo do curso).",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Abertura render/abertura.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.540",
+    "@remotion/fonts": "4.0.540",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.540"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.0",
+    "typescript": "5.9.3"
+  }
+}

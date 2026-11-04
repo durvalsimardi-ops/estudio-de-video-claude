@@ -1,0 +1,149 @@
+<!doctype html>
+<!-- Vídeo desenhado (aula 27): cada frase vira uma cena num caderno. Os desenhos aparecem traço a traço
+     e as palavras são "escritas à mão" no tempo da fala. Cada quadro é função do tempo: window.seek(t).
+     Quem chama é o render.mjs, que passa o roteiro (cenas com tempos, desenhos e fontes) para window.iniciar(). -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+  #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+  /* uma cena = uma folha do caderno */
+  .folha { position: absolute; inset: 0; background-color: var(--fundo);
+           background-image: radial-gradient(circle, var(--ponto) 2.2px, transparent 2.6px); background-size: 54px 54px; background-position: 27px 27px; }
+  .a { position: absolute; }
+  /* zona dos desenhos (alto) e zona do texto (meio-baixo, longe da faixa de baixo do 9:16) */
+  .desenhos { left: 60px; right: 60px; top: 320px; height: 780px; display: flex; align-items: center; justify-content: center; gap: 60px; }
+  .desenhos svg { overflow: visible; flex: none; }
+  .texto { left: 80px; right: 80px; top: 1170px; height: 420px; display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center;
+           column-gap: .28em; row-gap: .02em; font-family: "Mao", cursive; font-weight: 700; color: var(--tinta); line-height: 1.12; }
+  .pal { position: relative; display: inline-block; white-space: nowrap; }
+  .pal .tinta { display: inline-block; }
+  .pal.destaque { color: var(--destaque); }
+  .pal svg.risco { position: absolute; left: -4%; width: 108%; bottom: -.08em; height: .28em; overflow: visible; }
+  #lapis { position: absolute; left: 0; top: 0; width: 110px; height: 110px; z-index: 10; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const root = document.getElementById("root");
+const prende = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => prende((t - a) / (b - a));
+const suave = x => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const freia = x => 1 - Math.pow(1 - x, 3);
+const escapa = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+// lápis desenhado à mão (desenho próprio); a ponta fica no canto de baixo à esquerda
+const LAPIS = `<svg id="lapis" viewBox="0 0 64 64"><path d="M6 58l5-17L44 8c2-2 5-2 7 0l5 5c2 2 2 5 0 7L23 53z" fill="#F2B632" stroke="#1B1D22" stroke-width="2.4" stroke-linejoin="round"/><path d="M6 58l5-17 12 12z" fill="#F6E2C0" stroke="#1B1D22" stroke-width="2.4" stroke-linejoin="round"/><path d="M6 58l2.4-8 5.6 5.6z" fill="#1B1D22"/><path d="M44 8l12 12" stroke="#1B1D22" stroke-width="2.4"/></svg>`;
+const TR = .4;   // duração da troca de folha (s)
+
+let R, cenas = [], lapis;
+
+// monta uma folha: desenhos em cima, frase embaixo (cada palavra separada)
+function montarCena(c, i) {
+  const folha = document.createElement("div");
+  folha.className = "folha";
+  root.appendChild(folha);
+  // desenhos: tamanho conforme a quantidade
+  const zona = document.createElement("div"); zona.className = "a desenhos"; folha.appendChild(zona);
+  const tam = c.desenhos.length <= 1 ? 620 : c.desenhos.length === 2 ? 430 : 300;
+  const desenhos = c.desenhos.map(d => {
+    zona.insertAdjacentHTML("beforeend", `<svg viewBox="0 0 24 24" width="${tam}" height="${tam}" fill="none" stroke="${d.cor || "var(--tinta)"}" stroke-width="${R.espessura}" stroke-linecap="round" stroke-linejoin="round">${d.svg}</svg>`);
+    const svg = zona.lastElementChild;
+    const tracos = [...svg.querySelectorAll("path,circle,rect,line,polyline,polygon,ellipse")].map(el => {
+      const L = el.getTotalLength();
+      el.style.strokeDasharray = `${L} ${L + 1}`; el.style.strokeDashoffset = L;
+      return { el, L };
+    });
+    const total = tracos.reduce((s, x) => s + x.L, 0) || 1;
+    return { ...d, svg, tracos, total };
+  });
+  // frase: uma <span> por palavra, com o risco de destaque embaixo
+  const tx = document.createElement("div"); tx.className = "a texto"; folha.appendChild(tx);
+  const pals = c.palavras.map(p => {
+    const el = document.createElement("span");
+    el.className = "pal" + (p.destaque ? " destaque" : "");
+    el.innerHTML = `<span class="tinta">${escapa(p.w)}</span>` + (p.destaque ? `<svg class="risco" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M2 6 C 25 2, 55 9, 98 4" pathLength="1" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>` : "");
+    tx.appendChild(el);
+    const risco = el.querySelector("svg.risco path");
+    if (risco) { risco.style.strokeDasharray = "1 1.01"; risco.style.strokeDashoffset = 1; }
+    return { ...p, el, tinta: el.firstChild, risco };
+  });
+  // letra diminui até a frase caber na zona do texto
+  let fs = R.letra;
+  tx.style.fontSize = fs + "px";
+  while (tx.scrollHeight > tx.clientHeight + 2 && fs > 56) { fs -= 4; tx.style.fontSize = fs + "px"; }
+  return { c, folha, desenhos, pals };
+}
+
+window.iniciar = async (roteiro) => {
+  R = roteiro;
+  const st = document.documentElement.style;
+  st.setProperty("--fundo", R.cores.fundo); st.setProperty("--tinta", R.cores.tinta);
+  st.setProperty("--destaque", R.cores.destaque); st.setProperty("--ponto", R.cores.ponto);
+  // fonte manuscrita vem embutida (base64) do render.mjs: carregada antes do primeiro quadro
+  const f = new FontFace("Mao", `url(data:font/woff2;base64,${R.fonte})`, { weight: "700" });
+  document.fonts.add(await f.load());
+  await document.fonts.ready;
+  cenas = R.cenas.map(montarCena);
+  root.insertAdjacentHTML("beforeend", LAPIS);
+  lapis = document.getElementById("lapis");
+  return true;
+};
+
+// ponta do lápis: posição na tela de um ponto do traço
+function ponta(el, l) {
+  const p = el.getPointAtLength(l), m = el.getScreenCTM();
+  return [p.x * m.a + p.y * m.c + m.e, p.x * m.b + p.y * m.d + m.f];
+}
+
+window.seek = async (t) => {
+  // folha da vez e troca: a folha nova sobe por cima da anterior
+  let k = 0;
+  cenas.forEach((s, i) => { if (t >= s.c.ini) k = i; });
+  let tip = null;
+  cenas.forEach((s, i) => {
+    const visivel = i === k || (i === k - 1 && t < cenas[k].c.ini + TR);
+    s.folha.style.display = visivel ? "" : "none";
+    if (!visivel) return;
+    s.folha.style.zIndex = i === k ? 2 : 1;
+    const q = k > 0 ? suave(prog(t, cenas[k].c.ini, cenas[k].c.ini + TR)) : 1;
+    // a nova vem de baixo; a antiga sobe um pouco e fica por baixo
+    s.folha.style.transform = i === k ? `translateY(${(1 - q) * 1920}px)` : `translateY(${-q * 260}px)`;
+
+    // desenhos: cada um é traçado na ordem, na velocidade do comprimento do traço
+    s.desenhos.forEach(d => {
+      const qd = prog(t, d.ini, d.ini + d.dura);
+      let resta = qd * d.total;
+      d.tracos.forEach(tr => {
+        const feito = prende(resta, 0, tr.L); resta -= tr.L;
+        tr.el.style.strokeDashoffset = tr.L - feito;
+        tr.el.style.opacity = feito > 0 ? 1 : 0;
+        if (i === k && feito > 0 && feito < tr.L) tip = ponta(tr.el, feito);
+      });
+    });
+    // palavras: cada uma é escrita da esquerda para a direita enquanto é falada
+    s.pals.forEach(p => {
+      const qp = prog(t, p.s, p.s + p.dura);
+      // a máscara corta da direita; folga em cima (acentos) e nos lados (letra inclinada)
+      p.tinta.style.clipPath = `inset(-90% ${(1 - qp) * 112 - 12}% -40% -8%)`;
+      if (i === k && qp > 0 && qp < 1) {
+        const r = p.tinta.getBoundingClientRect();
+        tip = [r.left + r.width * qp, r.top + r.height * .78 + Math.sin(qp * 40) * 6];
+      }
+      if (p.risco) {
+        const qr = freia(prog(t, p.s + p.dura, p.s + p.dura + .35));
+        p.risco.style.strokeDashoffset = 1 - qr;
+      }
+    });
+  });
+  // o lápis aparece só enquanto algo está sendo desenhado ou escrito
+  lapis.style.opacity = tip ? 1 : 0;
+  // a ponta do lápis fica em (10, 100) dentro do desenho de 110 px
+  if (tip) lapis.style.transform = `translate(${tip[0] - 10}px, ${tip[1] - 100}px)`;
+  return true;
+};
+</script>
+</body>
+</html>

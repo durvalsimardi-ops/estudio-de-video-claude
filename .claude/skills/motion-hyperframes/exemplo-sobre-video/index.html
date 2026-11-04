@@ -1,0 +1,162 @@
+<!doctype html>
+<!-- Motion POR CIMA de um vídeo gravado, para o HyperFrames, em 1080x1920.
+     O vídeo da pessoa falando fica no fundo. Por cima entram: título no começo, legenda palavra a palavra
+     e cartões que aparecem quando a pessoa fala certas palavras. Tudo no tempo da fala (palavras.js).
+     Arquivos que o preparar-video.sh põe nesta pasta:
+       video.mp4    o trecho gravado, já em 30 qps
+       palavras.js  as palavras com o tempo de cada uma (do ferramentas/transcrever.py)
+       config.js    o que o aluno troca: título, palavras em destaque e cartões
+       fontes/      Fraunces e Inter (licença OFL junto) -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080, height=1920">
+<style>
+  /* ===== FONTES (arquivos locais, licença OFL) ===== */
+  @font-face { font-family: "Fraunces"; src: url("fontes/Fraunces-600.woff2") format("woff2"); font-weight: 600; }
+  @font-face { font-family: "Inter"; src: url("fontes/Inter-600.woff2") format("woff2"); font-weight: 600; }
+
+  /* ===== CORES ===== */
+  :root {
+    --azul: #2E6BFF;     /* faixa do título e palavra falada agora */
+    --cafe: #2B211B;     /* texto do cartão */
+    --branco: #FFFFFF;
+    --sombra: rgba(10, 12, 16, .72);  /* faixa escura atrás da legenda (texto sobre vídeo precisa de faixa) */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+  #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #000; font-family: "Inter", sans-serif; }
+  .peca { position: absolute; }
+
+  /* o vídeo gravado cobre a tela inteira */
+  #fundo { left: 0; top: 0; width: 1080px; height: 1920px; object-fit: cover; transform-origin: 50% 40%; }
+
+  /* título: faixa azul com o texto em Fraunces, no alto */
+  #titulo { left: 70px; right: 70px; top: 190px; display: flex; justify-content: center; }
+  #titulo .faixa { background: var(--azul); color: var(--branco); padding: 22px 38px 28px; border-radius: 18px;
+                   font: 600 84px/1.08 "Fraunces", serif; text-align: center; }
+  #titulo .palavra { display: inline-block; }
+
+  /* cartão: caixa branca com barra azul, entra quando a palavra é falada */
+  #cartao { left: 120px; right: 120px; top: 230px; display: flex; justify-content: center; }
+  #cartao .caixa { background: var(--branco); color: var(--cafe); border-left: 16px solid var(--azul); border-radius: 22px;
+                   padding: 30px 40px; font: 600 60px/1.15 "Inter", sans-serif; box-shadow: 0 24px 60px rgba(0,0,0,.35); text-align: center; }
+
+  /* legenda: até 4 palavras por vez; a palavra falada agora ganha fundo azul */
+  #legenda { left: 60px; right: 60px; top: 1330px; display: flex; justify-content: center; }
+  #legenda .faixa { background: var(--sombra); border-radius: 18px; padding: 14px 22px; text-align: center;
+                    font: 600 64px/1.2 "Inter", sans-serif; color: var(--branco); }
+  #legenda .p { display: inline-block; padding: 2px 10px 6px; border-radius: 10px; }
+  #legenda .agora { background: var(--azul); }
+</style>
+<!-- dados da peça: carregados antes do script principal -->
+<script src="palavras.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+<!-- __DURACAO__ é trocado pelo preparar-video.sh pela duração real do trecho (em segundos) -->
+<div id="root" data-composition-id="sobre-video" data-start="0" data-duration="__DURACAO__" data-width="1080" data-height="1920" data-fps="30" data-no-timeline>
+  <!-- o vídeo gravado; data-has-audio mantém a voz da pessoa no vídeo final -->
+  <video id="fundo" class="peca clip" src="video.mp4" data-start="0" data-duration="__DURACAO__" data-has-audio="true" playsinline></video>
+  <div class="peca" id="titulo"><div class="faixa"></div></div>
+  <div class="peca" id="cartao"><div class="caixa"></div></div>
+  <div class="peca" id="legenda"><div class="faixa"></div></div>
+</div>
+
+<script>
+// ===== DADOS =====
+const PALAVRAS = window.PALAVRAS || [];   // [{w, s, e}] de palavras.js
+const PECA = window.PECA || {};           // de config.js
+const DURACAO = Number(document.getElementById("root").dataset.duration) || 10;
+
+// ===== FERRAMENTAS DE TEMPO =====
+const prende = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, ini, fim) => prende((t - ini) / (fim - ini));
+const freia = x => 1 - Math.pow(1 - x, 4);
+const mola = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos(8 * x);
+// tira acento, pontuação e maiúscula, para achar "Café," quando o config diz "cafe"
+const limpa = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const escapa = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const $ = id => document.getElementById(id);
+
+// ===== MONTAGEM (roda uma vez) =====
+// título, palavra por palavra
+const TITULO_ATE = PECA.tituloAte ?? 2.4;
+$("titulo").firstElementChild.innerHTML = (PECA.titulo || "").split(" ").map(p => `<span class="palavra">${escapa(p)}</span>`).join(" ");
+const palavrasTitulo = [...document.querySelectorAll("#titulo .palavra")];
+if (!PECA.titulo) $("titulo").style.display = "none";
+
+// blocos de legenda: até 4 palavras; quebra em pontuação ou pausa maior que 0,3 s
+const blocos = [];
+let atual = [];
+PALAVRAS.forEach((w, i) => {
+  atual.push(w);
+  const prox = PALAVRAS[i + 1];
+  if (atual.length >= 4 || /[.,!?;:]$/.test(w.w) || !prox || prox.s - w.e > .3) { blocos.push(atual); atual = []; }
+});
+const DESTAQUES = new Set((PECA.destaques || []).map(limpa));
+
+// cartões: cada um começa quando a palavra-gatilho é falada (primeira vez depois do título)
+const cartoes = (PECA.cartoes || []).map(c => {
+  const w = PALAVRAS.find(p => limpa(p.w) === limpa(c.palavra) && p.s >= TITULO_ATE - .2);
+  if (!w) { console.warn("palavra do cartão não foi falada:", c.palavra); return null; }
+  return { ini: w.s, fim: w.s + (c.dura || 2.5), texto: c.texto };
+}).filter(Boolean).sort((a, b) => a.ini - b.ini);
+// um cartão sai quando o próximo entra
+cartoes.forEach((c, i) => { if (cartoes[i + 1]) c.fim = Math.min(c.fim, cartoes[i + 1].ini); });
+
+// ===== O QUADRO =====
+function desenhar(t) {
+  // 1) vídeo: aproximação lenta (5% no vídeo inteiro) para a imagem não ficar parada
+  $("fundo").style.transform = `scale(${1 + .05 * prog(t, 0, DURACAO)})`;
+
+  // 2) título: faixa abre, palavras sobem uma a uma, e tudo sobe e some em TITULO_ATE
+  const sai = freia(prog(t, TITULO_ATE, TITULO_ATE + .35));
+  const faixa = $("titulo").firstElementChild;
+  faixa.style.clipPath = `inset(0 ${100 - 100 * freia(prog(t, 0, .35))}% 0 0 round 18px)`;
+  faixa.style.opacity = 1 - sai;
+  faixa.style.transform = `translateY(${-60 * sai}px)`;
+  palavrasTitulo.forEach((p, i) => {
+    const q = prog(t, .15 + i * .1, .15 + i * .1 + .6);
+    p.style.opacity = freia(prog(t, .15 + i * .1, .35 + i * .1));
+    p.style.transform = `translateY(${(1 - mola(q)) * 50}px)`;
+  });
+
+  // 3) cartão: o cartão da vez entra com mola e sai em 0,3 s
+  const c = cartoes.find(c => t >= c.ini && t < c.fim + .3);
+  const caixa = $("cartao").firstElementChild;
+  if (c) {
+    if (caixa.dataset.texto !== c.texto) { caixa.innerHTML = escapa(c.texto); caixa.dataset.texto = c.texto; }
+    const q = prog(t, c.ini, c.ini + .6), fora = freia(prog(t, c.fim, c.fim + .3));
+    caixa.style.opacity = freia(prog(t, c.ini, c.ini + .2)) * (1 - fora);
+    caixa.style.transform = `translateY(${(1 - mola(q)) * 70 - 40 * fora}px) scale(${.85 + .15 * mola(q)})`;
+  } else {
+    caixa.style.opacity = 0;
+  }
+
+  // 4) legenda: mostra o bloco da vez e pinta de azul a palavra que está sendo falada
+  const lg = $("legenda").firstElementChild;
+  const b = blocos.find((g, i) => t >= g[0].s - .05 && t < (blocos[i + 1] ? Math.min(blocos[i + 1][0].s - .05, g[g.length - 1].e + .6) : g[g.length - 1].e + .6));
+  if (!b) { lg.style.opacity = 0; return; }
+  lg.style.opacity = 1;
+  lg.innerHTML = b.map(w => {
+    const falando = t >= w.s && t < w.e;   // só uma palavra azul por vez
+    const destaque = DESTAQUES.has(limpa(w.w));
+    return `<span class="p${falando ? " agora" : ""}"${destaque && !falando ? ' style="color:#8FB0FF"' : ""}>${escapa(w.w)}</span>`;
+  }).join(" ");
+}
+
+// ===== LIGAÇÃO COM O HYPERFRAMES (igual ao outro exemplo) =====
+const fontesProntas = Promise.all([
+  document.fonts.load('600 84px "Fraunces"'),
+  document.fonts.load('600 64px "Inter"'),
+]).then(() => document.fonts.ready);
+window.addEventListener("hf-seek", e => {
+  e.detail.waitUntil(fontesProntas.then(() => desenhar(e.detail.time)));
+});
+window.seek = t => fontesProntas.then(() => desenhar(t));
+fontesProntas.then(() => desenhar(0));
+</script>
+</body>
+</html>

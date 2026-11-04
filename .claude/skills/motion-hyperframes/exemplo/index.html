@@ -1,0 +1,188 @@
+<!doctype html>
+<!-- Abertura de 5 s do Café Aurora (marca de exemplo do curso), em 1080x1920, para o HyperFrames.
+     Regra de ouro: cada quadro é uma função do tempo. A função desenhar(t) recebe o segundo
+     e põe cada coisa no lugar certo. Nada anda sozinho: o HyperFrames pede o tempo, a página obedece. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<!-- tamanho da tela do vídeo: 1080 de largura por 1920 de altura (9:16) -->
+<meta name="viewport" content="width=1080, height=1920">
+<style>
+  /* ===== FONTES =====
+     As fontes ficam na pasta fontes/ ao lado deste arquivo (o nova-peca.sh copia de assets/fontes/).
+     Fraunces e Inter são livres (licença OFL, o arquivo OFL.txt vai junto). */
+  @font-face { font-family: "Fraunces"; src: url("fontes/Fraunces-600.woff2") format("woff2"); font-weight: 600; }
+  @font-face { font-family: "Inter"; src: url("fontes/Inter-400.woff2") format("woff2"); font-weight: 400; }
+  @font-face { font-family: "Inter"; src: url("fontes/Inter-600.woff2") format("woff2"); font-weight: 600; }
+
+  /* ===== CORES DA MARCA =====
+     Para mudar a cor da peça, mude só aqui. */
+  :root {
+    --azul: #2E6BFF;    /* fundo principal */
+    --creme: #F7F3EC;   /* fundo do final, com o logo */
+    --cafe: #2B211B;    /* texto do logo */
+    --branco: #FFFFFF;  /* título e desenho da xícara */
+  }
+
+  /* zera margens e trava a página no tamanho do vídeo */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--azul); }
+
+  /* #root é o "palco": tudo acontece aqui dentro */
+  #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--azul); font-family: "Inter", sans-serif; }
+
+  /* toda peça é posicionada à mão (absolute), para o tempo mexer nela sem empurrar as outras */
+  .peca { position: absolute; }
+
+  /* fundo: duas manchas de luz que passeiam devagar (o "movimento sutil") */
+  .luz { width: 1400px; height: 1400px; border-radius: 50%; left: 0; top: 0;
+         background: radial-gradient(circle, rgba(255,255,255,.20) 0%, rgba(255,255,255,0) 62%); }
+
+  /* a xícara desenhada em traço branco: é o produto, na tela desde o primeiro quadro */
+  #xicara { left: 300px; top: 300px; width: 480px; height: 480px; }
+
+  /* título: cada palavra é um <span> separado, para entrar uma de cada vez */
+  #titulo { left: 90px; right: 90px; top: 860px; text-align: center; color: var(--branco);
+            font: 600 150px/1.04 "Fraunces", serif; letter-spacing: -0.01em; }
+  #titulo .palavra { display: inline-block; margin: 0 .03em; }
+
+  /* frase de apoio, menor, em Inter */
+  #apoio { left: 0; right: 0; top: 1400px; text-align: center; color: var(--branco);
+           font: 400 52px/1.3 "Inter", sans-serif; }
+
+  /* o "sol nascendo": um círculo creme que cresce de baixo e vira o fundo do final */
+  #sol { left: 0; top: 0; width: 1080px; height: 1920px; background: var(--creme); }
+
+  /* o logo de texto no final */
+  #logo { left: 0; right: 0; top: 860px; display: flex; justify-content: center; }
+  #logo svg { width: 760px; height: auto; overflow: visible; }
+</style>
+</head>
+<body>
+<!-- data-composition-id, data-width, data-height e data-duration dizem ao HyperFrames o tamanho
+     e a duração do vídeo. Para mudar a duração, troque data-duration E a constante DURACAO lá embaixo. -->
+<div id="root" data-composition-id="abertura" data-start="0" data-duration="5" data-width="1080" data-height="1920" data-fps="30" data-no-timeline>
+
+  <!-- fundo: duas manchas de luz -->
+  <div class="peca luz" id="luz1"></div>
+  <div class="peca luz" id="luz2"></div>
+
+  <!-- xícara em traço (desenho próprio, sem arquivo de terceiros) -->
+  <svg class="peca" id="xicara" viewBox="0 0 200 200" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 92 h104 v28 a42 42 0 0 1 -42 42 h-20 a42 42 0 0 1 -42 -42 z"/>   <!-- corpo -->
+    <path d="M144 102 h10 a18 18 0 0 1 0 36 h-12"/>                               <!-- alça -->
+    <path d="M26 178 h148"/>                                                       <!-- pires -->
+    <!-- três fios de vapor; o "tracejado" deles anda com o tempo e parece fumaça subindo -->
+    <path class="vapor" d="M70 74 c-10 -12 10 -20 0 -34 c-8 -10 4 -18 0 -26"/>
+    <path class="vapor" d="M94 74 c-10 -12 10 -20 0 -34 c-8 -10 4 -18 0 -26"/>
+    <path class="vapor" d="M118 74 c-10 -12 10 -20 0 -34 c-8 -10 4 -18 0 -26"/>
+  </svg>
+
+  <!-- título: o texto é montado pelo script a partir da constante TITULO -->
+  <div class="peca" id="titulo"></div>
+
+  <!-- frase de apoio -->
+  <div class="peca" id="apoio"></div>
+
+  <!-- o sol que cresce -->
+  <div class="peca" id="sol"></div>
+
+  <!-- logo do Café Aurora, copiado de marcas/cafe-aurora/logo.svg (fica dentro da página para usar a fonte carregada) -->
+  <div class="peca" id="logo">
+    <svg viewBox="0 0 440 120">
+      <g fill="none" stroke="#2E6BFF" stroke-width="6" stroke-linecap="round">
+        <path d="M22 70 h68 v10 a22 22 0 0 1 -22 22 h-24 a22 22 0 0 1 -22 -22 z" fill="#2E6BFF"/>
+        <path d="M90 74 h8 a10 10 0 0 1 0 20 h-8"/>
+        <path d="M36 58 a20 20 0 0 1 40 0"/>
+        <path id="raios" d="M56 26 v10 M30 38 l7 7 M82 38 l-7 7"/>
+      </g>
+      <text x="122" y="84" font-family="Fraunces, serif" font-weight="600" font-size="52" fill="#2B211B">Café Aurora</text>
+    </svg>
+  </div>
+</div>
+
+<script>
+// ===== O QUE O ALUNO MAIS TROCA =====
+const TITULO = "Seu café já está passando.";   // cada palavra entra separada
+const APOIO = "Café bem feito, sem pressa.";   // frase menor embaixo
+const DURACAO = 5;                              // segundos (igual ao data-duration lá em cima)
+
+// ===== FERRAMENTAS DE TEMPO =====
+// prende um número entre a e b
+const prende = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+// progresso de 0 a 1 entre o segundo "ini" e o segundo "fim"
+const prog = (t, ini, fim) => prende((t - ini) / (fim - ini));
+// curvas de suavidade: "sai rápido e freia" e "acelera e freia"
+const freia = x => 1 - Math.pow(1 - x, 4);
+const suave = x => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+// mola: passa um pouco do ponto e volta, dá vida à palavra
+const mola = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos(8 * x);
+
+// ===== MONTAGEM (roda uma vez) =====
+const $ = id => document.getElementById(id);
+// quebra o título em palavras, cada uma num <span class="palavra">
+$("titulo").innerHTML = TITULO.split(" ").map(p => `<span class="palavra">${p}</span>`).join(" ");
+$("apoio").textContent = APOIO;
+const palavras = [...document.querySelectorAll("#titulo .palavra")];
+const vapores = [...document.querySelectorAll(".vapor")];
+// o vapor usa tracejado: um traço de 40 e um vão de 60 (em unidades do desenho)
+vapores.forEach(v => { v.setAttribute("pathLength", 100); v.style.strokeDasharray = "40 60"; });
+
+// ===== O QUADRO: tudo que aparece no segundo t =====
+function desenhar(t) {
+  // 1) fundo: as luzes andam em círculos lentos (seno e cosseno do tempo)
+  $("luz1").style.transform = `translate(${-300 + Math.sin(t * .8) * 90}px, ${-200 + Math.cos(t * .6) * 70}px)`;
+  $("luz2").style.transform = `translate(${100 + Math.cos(t * .7) * 80}px, ${900 + Math.sin(t * .9) * 90}px)`;
+
+  // "saída" da primeira parte: quando o sol começa a nascer, xícara, título e apoio sobem e somem
+  const qsai = suave(prog(t, 2.55, 2.95));
+  const sobe = -80 * qsai;
+
+  // 2) xícara: já está na tela no quadro 0; sobe 20 px bem devagar e o vapor sobe sem parar
+  $("xicara").style.transform = `translateY(${-20 * suave(prog(t, 0, 2.95)) + sobe}px)`;
+  $("xicara").style.opacity = 1 - qsai;
+  vapores.forEach((v, i) => { v.style.strokeDashoffset = -(t * 45 + i * 33); });
+
+  // 3) título palavra a palavra: a palavra i começa 0,15 s depois da anterior e leva 0,7 s para assentar
+  palavras.forEach((p, i) => {
+    const ini = .25 + i * .15;
+    const q = prog(t, ini, ini + .7);
+    p.style.opacity = freia(prog(t, ini, ini + .3)) * (1 - qsai);
+    p.style.transform = `translateY(${(1 - mola(q)) * 90 + sobe}px) rotate(${(1 - freia(q)) * 4}deg)`;
+  });
+
+  // 4) frase de apoio: entra subindo um pouco, logo depois do título
+  const qa = freia(prog(t, .85, 1.3));
+  $("apoio").style.opacity = qa * (1 - qsai);
+  $("apoio").style.transform = `translateY(${(1 - qa) * 30 + sobe}px)`;
+
+  // 5) o sol creme nasce de baixo (círculo que cresce) e cobre a tela
+  const qs = suave(prog(t, 2.55, 3.1));
+  $("sol").style.clipPath = `circle(${qs * 2200}px at 540px 2050px)`;
+
+  // 6) logo: aparece crescendo de 92% para 100% e fica pelo menos 2 s na tela (tempo de ler)
+  const ql = freia(prog(t, 2.85, 3.3));
+  $("logo").style.opacity = ql;
+  $("logo").style.transform = `scale(${.92 + .08 * ql})`;
+  // os raios do sol do logo acendem por último
+  $("raios").style.opacity = .3 + .7 * suave(prog(t, 3.3, 3.7));
+}
+
+// ===== LIGAÇÃO COM O HYPERFRAMES =====
+// as fontes precisam estar carregadas antes do primeiro quadro, senão o 1º quadro sai com letra errada
+const fontesProntas = Promise.all([
+  document.fonts.load('600 150px "Fraunces"'),
+  document.fonts.load('400 52px "Inter"'),
+]).then(() => document.fonts.ready);
+
+// o HyperFrames avisa "vá para o segundo X" com o evento hf-seek; a página espera as fontes e desenha
+window.addEventListener("hf-seek", e => {
+  e.detail.waitUntil(fontesProntas.then(() => desenhar(e.detail.time)));
+});
+// também deixamos window.seek(t) para quem quiser renderizar com outro programa (Chrome headless)
+window.seek = t => fontesProntas.then(() => desenhar(t));
+// desenha o quadro 0 assim que abre (para o Studio já mostrar algo)
+fontesProntas.then(() => desenhar(0));
+</script>
+</body>
+</html>

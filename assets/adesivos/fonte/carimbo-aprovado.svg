@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <g transform="rotate(-10 200 200)">
+    <circle cx="200" cy="200" r="182" fill="#FFFFFF" stroke="#2E6BFF" stroke-width="16"/>
+    <circle cx="200" cy="200" r="150" fill="none" stroke="#2E6BFF" stroke-width="6" stroke-dasharray="4 12" stroke-linecap="round"/>
+    <rect x="22" y="160" width="356" height="86" rx="10" fill="#2E6BFF"/>
+    <text x="200" y="230" text-anchor="middle" font-family="Barlow Condensed" font-weight="900" font-size="80" fill="#FFFFFF" letter-spacing="3">APROVADO</text>
+    <g fill="#2E6BFF">
+      <path d="M200 70 l12 26 28 3 -21 19 6 28 -25 -14 -25 14 6 -28 -21 -19 28 -3z"/>
+      <path d="M128 106 l7 15 16 2 -12 11 3 16 -14 -8 -14 8 3 -16 -12 -11 16 -2z"/>
+      <path d="M272 106 l7 15 16 2 -12 11 3 16 -14 -8 -14 8 3 -16 -12 -11 16 -2z"/>
+    </g>
+    <text x="200" y="312" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="40" fill="#2E6BFF" letter-spacing="6">NOTA 10</text>
+  </g>
+</svg>
